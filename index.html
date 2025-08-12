@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Naveen Shell</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#000;
+      --panel:#0d0d0d;
+      --accent:#00e6e6;
+      --keyword:#00ff66;
+      --prompt:#55ff55;
+      --muted:#888;
+      --orange:#ffaa33;
+    }
+    html,body{margin:0;padding:0;background:var(--bg);font-family:'Fira Code', monospace;color:#e0e0e0;height:100%}
+    .container{max-width:1000px;margin:20px auto;padding:20px;background:var(--panel);border-radius:8px;box-shadow:0 0 15px rgba(0,0,0,0.7)}
+    header{text-align:center;margin-bottom:15px}
+    header h1{margin:0;color:#fff;font-size:26px}
+    header p{margin:5px 0 0;color:var(--muted)}
+    .terminal{background:#000;padding:20px;border-radius:6px;font-size:15px;line-height:1.4;min-height:400px}
+    .output{white-space:pre-wrap}
+    .prompt{color:var(--prompt)}
+    .keyword{color:var(--keyword)}
+    .cyan{color:var(--accent)}
+    .orange{color:var(--orange)}
+    .table{display:table;border-spacing:1px;margin-top:5px}
+    .row{display:table-row}
+    .cell{display:table-cell;border:1px solid #444;padding:3px 8px}
+    .cell.header{font-weight:bold;color:var(--accent)}
+    .cmdline{display:flex;align-items:center}
+    .cmdline input{flex:1;background:transparent;border:none;outline:none;color:#fff;font-family:inherit;font-size:15px}
+    .cursor{display:inline-block;width:8px;height:17px;background:var(--accent);animation:blink 1s infinite}
+    @keyframes blink{50%{opacity:0}}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Sree Naveen</h1>
+      <p>Naveen Shell v1.0.0 — Interactive Portfolio</p>
+    </header>
+    <div class="terminal" id="terminal">
+      <div id="output" class="output"></div>
+      <div class="cmdline">
+        <span class="prompt">portfolio:~/</span>
+        <input id="cmd" autocomplete="off" spellcheck="false" autofocus>
+        <span class="cursor"></span>
+      </div>
+    </div>
+  </div>
+<script>
+const DATA = {
+  databases:[{Schema:'public',Name:'portfolio'}],
+  tables:[
+    {Schema:'public',Name:'education',Type:'table',Owner:'naveen'},
+    {Schema:'public',Name:'skills',Type:'table',Owner:'naveen'},
+    {Schema:'public',Name:'experience',Type:'table',Owner:'naveen'},
+    {Schema:'public',Name:'certificates',Type:'table',Owner:'naveen'},
+    {Schema:'public',Name:'projects',Type:'table',Owner:'naveen'}
+  ],
+  education:[
+    {Institution:'Karpagam Academy of Higher Edu.',Degree:'Bachelor of Technology',Field:'AI and Data Science',Year:'2023–2027',GPA:'7.1/10'},
+    {Institution:'sri Ramakrishna public school.',Degree:'HSC',Field:'Computer Science',Year:'2021–2023',GPA:'72%'}
+  ],
+  skills:[
+    {Type:'Programming/Scripting',Skills:'Python,pyspark, SQL, Linux Shell Scripting'},
+    {Type:'Distributed Computation',Skills:'Apache Hadoop, Apache Spark, Apache Flink'},
+    {Type:'Data Warehouses & Databases',Skills:' Snowflake, MySQL'},
+    {Type:'Workflow & Messaging',Skills:'Apache Airflow, Apache Kafka'},
+    {Type:'Web Frameworks',Skills:'FastAPI'},
+    {Type:'AWS',Skills:'S3, Lambda, DynamoDB, Athena'}
+  ],
+  certificates:[
+    {Certification:'Microsoft Certified: Azure AI Fundamentals'},
+    {Certification:'AWS : Introduction to aws'},
+    {Certification:'HackerRank - SQL (Advanced)'}
+  ],
+  projects:[
+    {Title:'Sky Track: Global Flight operation data lake & Analytics Platform',Description:'A real-time data pipeline streaming and tracking.'},
+    {Title:'Milkopolis',Description:'milkPolis is a fun 2D Pygame adventure game.'}
+  ],
+  experience:[
+    {Role:'Data Engineer Intern',Period:'2023',Description:'Built ETL pipelines and ingestion jobs'}
+  ]
+};
+const out=document.getElementById('output'),input=document.getElementById('cmd');
+let hist=[],idx=-1;
+function line(txt){out.innerHTML+=txt+"\n";document.getElementById('terminal').scrollTop=out.scrollHeight;}
+function table(headers,rows){
+  let t='<div class="table">';
+  t+='<div class="row">'+headers.map(h=>`<div class="cell header">${h}</div>`).join('')+'</div>';
+  rows.forEach(r=>{
+    t+='<div class="row">'+headers.map(h=>`<div class="cell">${r[h]??''}</div>`).join('')+'</div>';
+  });
+  t+='</div>';out.innerHTML+=t;
+}
+function cmdRun(cmd){
+  let c=cmd.trim().toLowerCase();
+  if(c==='show databases') table(['Schema','Name'],DATA.databases);
+  else if(c==='show tables') table(['Schema','Name','Type','Owner'],DATA.tables);
+  else if(c.startsWith('use ')) line(`Connected to database "${cmd.split(' ')[1]}"`);
+  else if(c.startsWith('select * from ')){
+    let t=cmd.split(' ')[3];
+    if(DATA[t]){table(Object.keys(DATA[t][0]),DATA[t]);}
+    else line(`ERROR: relation "${t}" does not exist`);
+  }
+  else if(c==='help') line("show databases, use <db>, show tables, select * from <table>, help, clear");
+  else if(c==='clear') out.innerHTML='';
+  else line(`ERROR: Invalid command. Type 'help' for commands`);
+}
+input.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){
+    line(`<span class="prompt">portfolio:~/</span> ${input.value}`);
+    hist.unshift(input.value);idx=-1;
+    cmdRun(input.value);
+    input.value='';
+  }
+  if(e.key==='ArrowUp'){if(hist.length){idx=Math.min(hist.length-1,idx+1);input.value=hist[idx];}}
+  if(e.key==='ArrowDown'){if(hist.length){idx=Math.max(-1,idx-1);input.value=idx==-1?'':hist[idx];}}
+});
+line('<span class="orange">Naveen Shell v1.0.0</span>');
+line("Type 'help' for available commands\n");
+cmdRun('show databases');
+</script>
+</body>
+</html>
